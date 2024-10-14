@@ -1,14 +1,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class ConveyorManager : MonoBehaviour
 {
-    [SerializeField] float spawnRate = 1f;
-    float chrono = 0f;
-    [SerializeField] int batch = 50;
-    [SerializeField] GameObject prefab;
+    [SerializeField] private ConveyorManager connectionOut;
+    [HideInInspector] public ConveyorManager connectionIn;
+    [SerializeField] private float spawnRate = 1f;
+    private float chrono = 0f;
+    [SerializeField] private int batch = 50;
+    [SerializeField] private GameObject prefab;
     private Queue<ConveyorItem> queue = new();
 
     [SerializeField]private Transform start;
@@ -24,7 +27,7 @@ public class ConveyorManager : MonoBehaviour
         }
     }
 
-    private void Spawn(){
+    public void Spawn(){
         if(queue.Count == 0){
             AddBatch();
         }
@@ -34,18 +37,25 @@ public class ConveyorManager : MonoBehaviour
         item.gameObject.SetActive(true);
     }
 
-    // Update is called once per frame
+    void Start(){
+        if(connectionOut != null)
+            connectionOut.connectionIn = this;
+    }
     void Update()
     {
-        chrono += Time.deltaTime;
-        if(chrono >= spawnRate){
-            chrono = 0f;
-            Spawn();
+        if(connectionIn == null){
+            chrono += Time.deltaTime;
+            if(chrono >= spawnRate){
+                chrono = 0f;
+                Spawn();
+            }
         }
     }
 
     public void ItemArrived(ConveyorItem item){
         item.gameObject.SetActive(false);
         queue.Enqueue(item);
+        if(connectionOut != null)
+            connectionOut.Spawn();
     }
 }
